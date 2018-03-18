@@ -25,7 +25,6 @@
  **    Macros / typedef
  **
  *********************************************************************/
-//TODO mettre ces define dans le boardIO.h afin qu'ils devienne global et ne soient pas recopier plusieurs fois
 #define IE       UCA0IE
 #define PIN_0	(0)
 #define PIN_1	(1)
@@ -73,46 +72,15 @@
  **    Static variables
  **
  *********************************************************************/
-//static int8_t datasize,*uartdataUart,*uartdataUart1;
+static int8_t datasize, *uartdataUart, *uartdataUart1;
 static int16_t (*Rx0_Callback)(uint8_t);
 static int16_t (*Rx1_Callback)(uint8_t);
-
-
-//static uint8_t UARTx_CTL1[] = {UART0_CTL1,UART1_CTL1} ;
-//static uint8_t UARTx_BAUDRATE[] = {UART0_BAUDRATE,UART1_BAUDRATE} ;
-//static uint8_t UARTx_MCTL[] = {UART0_MCTL,UART1_MCTL} ;
-//static uint8_t UARTx_CTL1[] = {UART0_CTL1,UART1_CTL1} ;
-//static uint8_t UARTx_ETAT[] = {UART0_ETAT,UART1_ETAT} ;
-//static uint8_t UARTx_IE[] = {UART0_IE,UART1_IE} ;
-
-
-
-/*********************************************************************
- **
- **    Private functions declarations
- **
- *********************************************************************/
-
-
-/*********************************************************************
- **
- **    Private functions 
- **
- *********************************************************************/
-
-
-//**************************************************************
-
 
 /*********************************************************************
  **
  **    Public functions
  **
  *********************************************************************/
-// TODO à Thibault pourquoi faire un init different pour l'uart 1 et 2?
-//		autant initialiser les 2 uart directement il ne sert a rien de choisir
-// 		quel Uart sera initialiser, je trouve plus inteligent d'initialiser
-//		les 2 directement sans demander lequel sera initialiser
 uint8_t uart_init(uint8_t idx)
 {
 	uint8_t uart_stat=0;
@@ -164,11 +132,7 @@ uint8_t uart_init(uint8_t idx)
 	}
 
 
-	    /********************** Clock en externe a 4MHz via le quartz            ************************/
-	    /*
-	    UART0_CTL1 = (DISABLE<<PIN_0)|(DISABLE<<PIN_1)|(DISABLE<<PIN_2)|(DISABLE<<PIN_3)
-	    			|(ENABLE<<PIN_4)|(ENABLE<<PIN_5)|(DISABLE<<PIN_6)|(DISABLE<<PIN_7);// datasheet page 915
-	     */
+	   /********************** Clock en externe a 4MHz via le quartz            ************************/
 	   /*	 Tableau du baudrate possible avec quartz à 4MHz (datasheet p.910) avec UCOS16 = 1
 	    *
 	    * 	 Fréquence  Baudre rate		UCBRx	UCBRSx	 UCBRFx
@@ -176,27 +140,11 @@ uint8_t uart_init(uint8_t idx)
 	    	 4,000,000 	 19200 			  13 	  0 		0
 	    =>	 4,000,000 	 115200 		  2 	  3 		2
 	   */
-	/*    // Choix de la valeur du prescaler (voir MSP430x5xx datasheet P.916).
-	    UART0_BAUDRATE=2;	// Parti haute du UCBR0
-	    UART0_BAUDRATE1=0;	// Parti basse du UCBR0
-	    // afin d'avoir un UCBR0 de 2
-	    // UCOS16 = 1 pour permettre le mode surechantillon,
-	    UART0_MCTL = (ENABLE<<PIN_0)|(DISABLE<<PIN_1)|(DISABLE<<PIN_2)|(DISABLE<<PIN_3)
-	    			 |(DISABLE<<PIN_4)|(DISABLE<<PIN_5)|(DISABLE<<PIN_6)|(ENABLE<<PIN_7);
-	    UART0_MCTL |= (UCBRF_2 | UCBRS_3 | UCOS16);// UCBRF = 2; UCSBRS = 3;*/
-
-	   // UART0_ETAT |= (ENABLE<<PIN_0);// mode echo, uniquement pour les testes, La transmission Uart est recu comme réception
-	    //les bit de 2 à 6 de l'UART0_ETAT indique l'érreur qui à été détecter lors de la transmission (datasheet p.917)
-
+	/*    // Choix de la valeur du prescaler (voir MSP430x5xx datasheet P.916).*/
 
 return uart_stat;
 }
 
-//**************************************************************
-// eventuellement un petit commentaire (le principal sera dans le .h
-
-
-//**************************************************************
 int8_t uart_sendChar(uint8_t idx, uint8_t data)
 {
 	 switch (idx)
@@ -256,13 +204,13 @@ __interrupt void UART_ISR(void)
       		Rx0_Callback(UART0_RX);
             break;
         case 4:     /* TX interrupt. */
-        		/*if(datasize)
-					{
+        		if(datasize)
+				{
 					UART0_TX = uartdataUart[0];
 					uartdataUart++; // décalle le tableau afin d'envoyer la chaine de caractere
 					datasize--;
-					}
-					*/
+				}
+					
             break;
         case 0:     /* Pas d'interrupt. */
         default:
@@ -279,12 +227,12 @@ __interrupt void UART1_ISR(void)
       			Rx1_Callback(UART1_RX);
             break;
         case 4:     // TX interrupt.
-        		/*if(datasize)
-					{
+        		if(datasize)
+				{
 					UART1_TX = uartdataUart1[0];
 					uartdataUart1++; // décalle le tableau afin d'envoyer la chaine de caractere
 					datasize--;
-					}*/
+				}
             break;
         case 0:     // Pas d'interrupt.
         default:
