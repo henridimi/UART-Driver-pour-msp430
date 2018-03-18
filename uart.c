@@ -84,65 +84,41 @@ static int16_t (*Rx1_Callback)(uint8_t);
 uint8_t uart_init(uint8_t idx)
 {
 	uint8_t uart_stat=0;
-
-	    /***********************Clock en interne a 12MHz via la PLL*******************************/
-		/*	 Tableau du baudrate possible avec quartz à 4MHz (datasheet p.910) ave UCOS16 = 1
-	    * 	 Fréquence  Baudre rate		UCBRx	UCBRSx	 UCBRFx
-	    =>	 12,000,000 	115200 		  6 	  0 		8
-	   */
-
-	if(!idx)
+	
+	// Internal clock at 12MHz with PLL (datasheet p.910)
+	if(!idx) 
 	{
-			// Mode reset pour la config et réception de tt les char, mode clock auxiliaire (SMCLK). datasheet P.915
+		// Reset, SMCLK : ON. datasheet P.915
 		UART0_CTL1 = (ENABLE<<PIN_0)|(ENABLE<<PIN_5)|(ENABLE<<PIN_7);
-			// Choix de la valeur du prescaler (voir MSP430x5xx datasheet P.916).
-		UART0_BAUDRATE=6;	// Parti haute du UCBR0
-		UART0_BAUDRATE1=0;	// Parti basse du UCBR0
-			// Dans le MCTL, le bit UCOS16 = 1 pour permettre le mode surechantillon,// la PLL fait monter la frquence jusqua 12MHz
+		UART0_BAUDRATE=6;
+		UART0_BAUDRATE1=0;
+		// PLL ON 12MHz
 		UART0_MCTL |= (UCBRF_8)| (UCBRS_0) | (UCOS16);
-		UART0_CTL1 &= ~(ENABLE<<PIN_0); // desactive le reset,l'init UART 0 est fini
-
-			// activation des interrupts de réception de l'uart
-	    UART0_IE |= (UCRXIE);// don't touch to tx interrupt enable FIXME datasheet P.921
-	    	// retourne la valeur de l'état apres l'initialisation
+		// Enable UART0
+		UART0_CTL1 &= ~(ENABLE<<PIN_0);
+		// Setting of interrupt
+	    UART0_IE |= (UCRXIE);
 	    uart_stat = UART0_ETAT;
-	}
+	} 
+	
 	else
 	{
-			// Mode reset pour la config et réception de tt les char, mode clock auxiliaire (SMCLK). datasheet P.915
 		UART1_CTL1 = (ENABLE<<PIN_0)|(ENABLE<<PIN_5)|(ENABLE<<PIN_7);
-			// Choix de la valeur du prescaler (voir MSP430x5xx datasheet P.916).
-#if (0)	// baudrate 115200
-	    UART1_BAUDRATE=6;	// Parti haute du UCBR0
-	    UART1_BAUDRATE1=0;	// Parti basse du UCBR0
-			// Dans le MCTL, le bit UCOS16 = 1 pour permettre le mode surechantillon,// la PLL fait monter la frquence jusqua 12MHz
-		UART1_MCTL |= (UCBRF_8)| (UCBRS_0) | (UCOS16);
-#else // baudrate 9600
-	    UART1_BAUDRATE=78;	// Parti haute du UCBR0
-	    UART1_BAUDRATE1=0;	// Parti basse du UCBR0
-			// Dans le MCTL, le bit UCOS16 = 1 pour permettre le mode surechantillon,// la PLL fait monter la frquence jusqua 12MHz
-		UART1_MCTL |= (UCBRF_2)| (UCBRS_0) | (UCOS16);
-#endif
-
-		UART1_CTL1 &= ~(ENABLE<<PIN_0); // desactive le reset,l'init UART 1 est fini
-			// activation des interrupts de réception de l'uart
-	   	UART1_IE |= (UCRXIE);// don't touch to tx interrupt enable FIXME datasheet P.921
-	   		// retourne la valeur de l'état apres l'initialisation
+		UART1_CTL1 &= ~(ENABLE<<PIN_0); 
+		// IE enable
+	   	UART1_IE |= (UCRXIE);
 	   	uart_stat = UART1_ETAT;
 	}
 
-
-	   /********************** Clock en externe a 4MHz via le quartz            ************************/
-	   /*	 Tableau du baudrate possible avec quartz à 4MHz (datasheet p.910) avec UCOS16 = 1
-	    *
+	   /*   External clock baudrate config with 4 Mhz 
+	    *   (datasheet p.910) avec UCOS16 = 1
 	    * 	 Fréquence  Baudre rate		UCBRx	UCBRSx	 UCBRFx
 	    * 	 4,000,000 	 9600  			  26 	  0 		1
 	    	 4,000,000 	 19200 			  13 	  0 		0
 	    =>	 4,000,000 	 115200 		  2 	  3 		2
-	   */
-	/*    // Choix de la valeur du prescaler (voir MSP430x5xx datasheet P.916).*/
+	    */
 
-return uart_stat;
+	return uart_stat;
 }
 
 int8_t uart_sendChar(uint8_t idx, uint8_t data)
@@ -150,11 +126,11 @@ int8_t uart_sendChar(uint8_t idx, uint8_t data)
 	 switch (idx)
 	  {
 	    case 0:
-	    	while( ! (UART0_IFG & 0x02));// attent que le buffer d'émission se vide
+	    	while( ! (UART0_IFG & 0x02));
 	    	UART0_TX = data;
 	      break;
 	    case 1:
-	    	while( ! (UART1_IFG & 0x02));// attent que le buffer d'émission se vide
+	    	while( ! (UART1_IFG & 0x02));
 	    	UART1_TX = data;
 	      break;
 
@@ -207,16 +183,17 @@ __interrupt void UART_ISR(void)
         		if(datasize)
 				{
 					UART0_TX = uartdataUart[0];
-					uartdataUart++; // décalle le tableau afin d'envoyer la chaine de caractere
+					uartdataUart++; // clean buffer
 					datasize--;
 				}
 					
             break;
-        case 0:     /* Pas d'interrupt. */
+        case 0:     /* No interrupt. */
         default:
             break;
     }
 }
+
 //**************************************************************
 #pragma vector=UART1_VEC // msp430f5528.h
 __interrupt void UART1_ISR(void)
@@ -230,11 +207,11 @@ __interrupt void UART1_ISR(void)
         		if(datasize)
 				{
 					UART1_TX = uartdataUart1[0];
-					uartdataUart1++; // décalle le tableau afin d'envoyer la chaine de caractere
+					uartdataUart1++; // clean buffer
 					datasize--;
 				}
             break;
-        case 0:     // Pas d'interrupt.
+        case 0:     // no interrupt.
         default:
             break;
     }
